@@ -1,0 +1,12 @@
+[Unit]
+Description=Pygmalion - Finds beautiful form in this shapeless void
+After=crossbar.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pygmalion-server
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

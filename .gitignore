@@ -1,0 +1,15 @@
+.vscode
+README.md
+.crossbar/*
+*.pyc
+__pycache__/
+venv/
+dist/
+pygmalion.egg-info/
+build/
+*.rpm
+.crossbar/node.pid
+conf.json
+*.kdev4
+*.kate-swp
+frontend/node_modules/

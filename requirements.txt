@@ -1,0 +1,10 @@
+docopt
+passlib
+autobahn
+pyasn1
+aiopg
+yoyo-migrations
+sqlalchemy
+requests
+idna==2.5
+aiohttp
