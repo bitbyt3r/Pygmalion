@@ -47,7 +47,7 @@ setup(
     version=version_num,
     description='Control a bunch of cameras at once',
     long_description="""Use Photogrammetry to scan objects or people.""",
-    license="GPLv3",
+    license="MIT",
     author='Mark Murnane',
     author_email='mark@hackafe.net',
     url='https://github.com/bitbyt3r/pygmalion',
