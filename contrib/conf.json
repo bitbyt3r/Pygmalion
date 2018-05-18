@@ -1,0 +1,8 @@
+{
+    "db_user": "pygmalion",
+    "db_pass": "password",
+    "db_host": "localhost",
+    "db_database": "pygmalion",
+    "wamp_host": "localhost",
+    "wamp_port": 8080
+}
