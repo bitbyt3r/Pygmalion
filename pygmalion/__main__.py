@@ -13,7 +13,7 @@ Options:
      --version        Print the version.
   -v --verbose        Set verbosity.
   -q --quiet          Suppress output.
-  -c --config=<file>  Path to config file[default: /etc/pygmalion/conf.json]
+  -c --config=<file>  Path to config file
 
 """
 
@@ -28,6 +28,7 @@ import functools
 import txaio
 import sys
 import docopt
+import pkg_resources
 
 import pygmalion.database
 import pygmalion.models
@@ -63,7 +64,8 @@ def server():
     loop.add_signal_handler(signal.SIGINT, functools.partial(nicely_exit, 'SIGINT'))
     loop.add_signal_handler(signal.SIGTERM, functools.partial(nicely_exit, 'SIGTERM'))
 
-    arguments = docopt.docopt(__doc__.format(sys.argv[0]), version="2.0.0")
+    version_num = version = pkg_resources.require("pygmalion")[0].version
+    arguments = docopt.docopt(__doc__.format(sys.argv[0]), version=str(version_num))
     arguments = {k.lstrip('--'): v for k, v in arguments.items()}
 
     verbose = arguments.get("verbose", 0)
@@ -81,7 +83,7 @@ def server():
         level = "critical"
     txaio.start_logging(level)
 
-    pygmalion.configure.get_config(arguments.get("config", "/etc/pygmalion/conf.json"))
+    pygmalion.configure.get_config(arguments.get("config", ""))
 
     while running:
         try:

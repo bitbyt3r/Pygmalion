@@ -1,6 +1,9 @@
 import os
 import asyncio
-import aiopg.sa
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import aiopg.sa
 from yoyo import read_migrations, get_backend
 
 import txaio

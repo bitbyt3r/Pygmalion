@@ -1,9 +1,10 @@
 all: run
 
-run: venv conf.json
-	export RPM_MODE=false; \
-	venv/bin/python setup.py install
+run: venv/bin/pygmalion-server conf.json
 	venv/bin/pygmalion-server -c conf.json
+
+venv/bin/pygmalion-server: venv
+	venv/bin/python setup.py develop
 
 conf.json:
 	cp contrib/conf.json conf.json
