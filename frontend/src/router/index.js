@@ -1,10 +1,10 @@
 import Vue from 'vue';
 import Router from 'vue-router';
-import Home from '@/components/Home';
-import Capture from '@/components/Capture';
-import Process from '@/components/Process';
-import Review from '@/components/Review';
-import Settings from '@/components/Settings';
+import Home from '../components/Home.vue';
+import Capture from '../components/Capture.vue';
+import Process from '../components/Process.vue';
+import Review from '../components/Review.vue';
+import Settings from '../components/Settings.vue';
 
 Vue.use(Router);
 
