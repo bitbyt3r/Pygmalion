@@ -54,7 +54,7 @@ export default {
     methods: {
         inputClicked(input, event) {
             event.target.classList.add('selected');
-            this.$emit('inputClicked', input);
+            this.$emit('inputClicked', {input, event});
         },
         outputClicked(output, event) {
             event.target.classList.add('selected');
@@ -78,6 +78,15 @@ export default {
             this.dragY = event.clientY;
         },
         dragEnd(event) {
+            const newnode = {
+                x: this.node.x + event.clientX - this.dragX,
+                y: this.node.y + event.clientY - this.dragY,
+                id: this.node.id
+            };
+            this.$store.commit('update_node', newnode);
+            this.updateConnections();
+            this.dragX = event.clientX;
+            this.dragY = event.clientY;
             document.removeEventListener('mousemove', this.dragMove);
             document.removeEventListener('mouseup', this.dragEnd);
         },
