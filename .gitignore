@@ -13,3 +13,4 @@ conf.json
 *.kdev4
 *.kate-swp
 frontend/node_modules/
+*.so
