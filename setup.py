@@ -1,5 +1,6 @@
 #!venv/bin/python
 from setuptools import setup, find_packages
+from setuptools.extension import Extension
 import subprocess
 import os
 import sys
@@ -14,6 +15,14 @@ except LookupError:
     func = lambda name, enc=ascii: {True: enc}.get(name == 'mbcs')
     codecs.register(func)
 
+ext_modules = [
+    Extension('pygmalion.ptp',
+        ['ptp/ptp.c', 'ptp/protocol.c'],
+        include_dirs=['ptp/', '/usr/include/libusb-1.0/'],
+        libraries=['usb-1.0'],
+    )
+]
+
 cmd = "git describe --tags --abbrev=0 HEAD"
 result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 git_tag = result.stdout.readlines()[0].strip().decode('ASCII')
@@ -27,7 +36,6 @@ print("Building {}-{}".format(version_num, release_num))
 
 data_files = []
 
-print(os.environ)
 if os.environ.get('RPM_MODE') == "true":
     print("Adding migration files")
     for x in os.walk("migrations"):
@@ -68,4 +76,5 @@ setup(
             'pygmalion=pygmalion.__main__:cli',
         ]
     },
+    ext_modules=ext_modules,
 )
