@@ -6,6 +6,7 @@
 bool done = true;
 libusb_context *ctx = NULL;
 pthread_t thread_id;
+camera_list *cameras = NULL;
 
 static int LIBUSB_CALL hotplug_callback_attach(libusb_context *ctx, libusb_device *dev, libusb_hotplug_event event, void *user_data) {
     struct libusb_device_descriptor desc;
@@ -16,6 +17,25 @@ static int LIBUSB_CALL hotplug_callback_attach(libusb_context *ctx, libusb_devic
         return 0;
     }
     printf("Device attached: %04x:%04x\n", desc.idVendor, desc.idProduct);
+    if (cameras != NULL) {
+        camera_list *temp = cameras;
+        while (temp->next != NULL) {
+            if (temp->vendorId == desc.idVendor && temp->deviceId == desc.idProduct) {
+                return 0;
+            }
+            temp = temp->next;
+        }
+        temp->next = (camera_list*)malloc(sizeof(struct camera_list));
+        temp = temp->next;
+        temp->vendorId = desc.idVendor;
+        temp->deviceId = desc.idProduct;
+        temp->next = NULL;
+    } else {
+        cameras = (camera_list*)malloc(sizeof(struct camera_list));
+        cameras->vendorId = desc.idVendor;
+        cameras->deviceId = desc.idProduct;
+        cameras->next = NULL;
+    }
     return 0;
 }
 
@@ -89,3 +109,8 @@ int ptp_usb_stop(void) {
         libusb_exit(ctx);
     }
 }
+
+camera_list *ptp_usb_list_cameras(void) {
+    return cameras;
+}
+

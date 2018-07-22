@@ -32,7 +32,14 @@ enum Operation {
     InitiateOpenCapture  = 0x101C,
 };
 
+typedef struct camera_list {
+    int vendorId;
+    int deviceId;
+    struct camera_list * next;
+} camera_list;
+
 int ptp_usb_start(void);
 int ptp_usb_stop(void);
+camera_list *ptp_usb_list_cameras(void);
 
 #endif
