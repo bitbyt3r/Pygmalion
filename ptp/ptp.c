@@ -1,38 +1,25 @@
 #include <Python.h>
 #include "ptp.h"
-#include "protocol.h"
-#include <glib.h>
+#include "usb.h"
+#include <stdbool.h>
+#include "camera.h"
+
+static PyObject *camera_added_cb = NULL;
+static PyObject *camera_removed_cb = NULL;
+static PyObject *camera_test_cb = NULL;
 
 static PyMethodDef ptp_methods[] = {
     {
         "init",
         ptp_init,
-        METH_NOARGS,
+        METH_VARARGS | METH_KEYWORDS,
         "Initialize the ptp module"
-    },
-    {
-        "list_cameras",
-        ptp_list_cameras,
-        METH_NOARGS,
-        "List connected cameras"
     },
     {
         "stop",
         ptp_stop,
         METH_NOARGS,
         "Close the usb connections"
-    },
-    {
-        "operation",
-        ptp_operation,
-        METH_VARARGS,
-        "Run a usb operation"
-    },
-    {
-        "open_camera",
-        ptp_open_camera,
-        METH_VARARGS,
-        "Open a connection to a given camera"
     },
     {NULL, NULL, 0, NULL}
 };
@@ -50,46 +37,66 @@ PyMODINIT_FUNC PyInit_ptp(void) {
     return PyModule_Create(&ptp_module);
 }
 
-static PyObject * ptp_init(PyObject *self, PyObject *args) {
-    ptp_usb_start();
-    Py_RETURN_NONE;
+void camera_added(libusb_device *dev, struct libusb_device_descriptor *desc) {
+    if (camera_added_cb == NULL) {
+        return;
+    }
+    PyObject *argList = Py_BuildValue("iii", desc->idVendor, desc->idProduct, dev);
+    PyObject *obj = newCameraObject(argList);
+    Py_DECREF(argList);
+    PyObject *args = Py_BuildValue("(O)", obj);
+    PyEval_CallObject(camera_added_cb, args);
 }
 
-static PyObject * ptp_list_cameras(PyObject *self, PyObject *args) {
-    GHashTable *camera_table;
-    camera_table = ptp_usb_list_cameras();
-    GHashTableIter iter;
-    g_hash_table_iter_init (&iter, camera_table);
-    PyObject *list;
-    list = Py_BuildValue("[]");
-    uint32_t *val;
-    uint32_t *key;
-    while (g_hash_table_iter_next(&iter, (gpointer) &key, (gpointer) &val)) {
-        PyObject *dict;
-        dict = Py_BuildValue("{s:i,s:i,s:i}", "vendor", ((camera*)val)->desc->idVendor, "product", ((camera*)val)->desc->idProduct, "device", ((camera*)val)->dev);
-        PyList_Append(list, dict);
+void camera_removed(libusb_device *dev, struct libusb_device_descriptor *desc) {
+    if (camera_removed_cb == NULL) {
+        return;
     }
-    return list;
+    PyObject *args;
+    args = Py_BuildValue("({s:i,s:i,s:i})", "vendor", desc->idVendor, "product", desc->idProduct, "device", dev);
+    PyEval_CallObject(camera_removed_cb, args);
+    Py_DECREF(args);
+}
+
+bool camera_test(struct libusb_device_descriptor *desc) {
+    if (camera_test_cb == NULL) {
+        return true;
+    }
+    PyObject *args;
+    args = Py_BuildValue("({s:i,s:i,s:i})", "vendor", desc->idVendor, "product", desc->idProduct);
+    PyObject *result = PyEval_CallObject(camera_test_cb, args);
+    Py_DECREF(args);
+    bool bool_result = PyObject_IsTrue(result);
+    Py_DECREF(result);
+    return bool_result;
+}
+
+static PyObject * ptp_init(PyObject *self, PyObject *args, PyObject *kw) {
+    static char *kwlist[] = {"camera_added", "camera_removed", "camera_test", NULL};
+    PyObject *cam_add_func;
+    PyObject *cam_rem_func;
+    PyObject *cam_test_func;
+    PyArg_ParseTupleAndKeywords(args, kw, "|OOO", kwlist, &cam_add_func, &cam_rem_func, &cam_test_func);
+    if (PyCallable_Check(cam_add_func)) {
+        Py_XDECREF(camera_added_cb);
+        Py_XINCREF(cam_add_func);
+        camera_added_cb = cam_add_func;
+    }
+    if (PyCallable_Check(cam_rem_func)) {
+        Py_XDECREF(camera_removed_cb);
+        Py_XINCREF(cam_rem_func);
+        camera_removed_cb = cam_rem_func;
+    }
+    if (PyCallable_Check(cam_test_func)) {
+        Py_XDECREF(camera_test_cb);
+        Py_XINCREF(cam_test_func);
+        camera_test_cb = cam_test_func;
+    }
+    ptp_usb_start(camera_added, camera_removed, camera_test);
+    Py_RETURN_NONE;
 }
 
 static PyObject * ptp_stop(PyObject *self, PyObject *args) {
     ptp_usb_stop();
-    Py_RETURN_NONE;
-}
-
-static PyObject * ptp_operation(PyObject *self, PyObject *args) {
-    command *cmd = (command*)malloc(sizeof(command));
-    int opcode;
-    PyArg_ParseTuple(args, "i", &opcode);
-    cmd->opcode = opcode;
-    ptp_usb_operation(cmd);
-    Py_RETURN_NONE;
-}
-
-static PyObject * ptp_open_camera(PyObject *self, PyObject *args) {
-    int dev;
-    PyArg_ParseTuple(args, "i", &dev);
-    printf("Opening camera %d\n", dev);
-    ptp_usb_open_camera(dev);
     Py_RETURN_NONE;
 }

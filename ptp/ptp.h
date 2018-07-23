@@ -3,11 +3,8 @@
 #ifndef PTP
 #define PTP
 
-static PyObject * ptp_init(PyObject *self, PyObject *args);
-static PyObject * ptp_list_cameras(PyObject *self, PyObject *args);
+static PyObject * ptp_init(PyObject *self, PyObject *args, PyObject *kw);
 static PyObject * ptp_stop(PyObject *self, PyObject *args);
-static PyObject * ptp_operation(PyObject *self, PyObject *args);
-static PyObject * ptp_open_camera(PyObject *self, PyObject *args);
 
 static PyMethodDef ptp_methods[];
 
