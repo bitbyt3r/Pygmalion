@@ -1,0 +1,17 @@
+#include "Python.h"
+
+#define CameraObject_Check(v) (Py_TYPE(v) == &Camera_Type)
+
+PyObject *ErrorObject;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *x_attr;
+} CameraObject;
+
+PyTypeObject Camera_Type;
+CameraObject *newCameraObject(PyObject *arg);
+void Camera_dealloc(CameraObject *self);
+PyObject *Camera_open(CameraObject *self, PyObject *args);
+PyObject *Camera_getattro(CameraObject *self, PyObject *name);
+int Camera_setattr(CameraObject *self, const char *name, PyObject *v);
