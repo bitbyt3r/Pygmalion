@@ -1,8 +1,3 @@
-//Copyright 2016 Sketchpunk Labs
-
-//###########################################################################
-//Main Static Object
-//###########################################################################
 var NEditor = {};
 NEditor.dragMode = 0;
 NEditor.dragItem = null;    //reference to the dragging item
@@ -70,7 +65,7 @@ NEditor.setCurveColor = function(elm,isActive){ elm.setAttribute('stroke', (isAc
 NEditor.createline = function (x1, y1, x2, y2, color, w) {
 	var line = document.createElementNS(NEditor.svg.ns, 'line');
 	line.setAttribute('x1', x1);
-	line.setAttribute('y1', y1);
+	line.setAttribute('y1',  y1);
 	line.setAttribute('x2', x2);
 	line.setAttribute('y2', y2);
 	line.setAttribute('stroke', color);

@@ -18,8 +18,8 @@ except LookupError:
 ext_modules = [
     Extension('pygmalion.ptp',
         ['ptp/ptp.c', 'ptp/protocol.c'],
-        include_dirs=['ptp/', '/usr/include/libusb-1.0/'],
-        libraries=['usb-1.0'],
+        include_dirs=['ptp/', '/usr/include/libusb-1.0/', '/usr/include/glib-2.0/', '/usr/lib64/glib-2.0/include/'],
+        libraries=['usb-1.0', 'glib-2.0'],
     )
 ]
 
