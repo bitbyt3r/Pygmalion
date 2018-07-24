@@ -35,12 +35,15 @@ enum Operation {
 };
 
 typedef struct command {
+    uint32_t length;
+    uint16_t packet_type;
     uint16_t opcode;
+    uint32_t transaction;
     uint32_t param1;
     uint32_t param2;
     uint32_t param3;
-    uint32_t session;
-    uint32_t transaction;
+    uint32_t param4;
+    uint32_t param5;
 } command;
 
 int ptp_usb_start(void *camera_added_cb, void *camera_removed_cb, void *camera_test_cb);

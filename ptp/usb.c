@@ -145,17 +145,18 @@ void pack32(uint32_t val, unsigned char *buf) {
 int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callback) {
     struct libusb_transfer *transfer = libusb_alloc_transfer(0);
     unsigned char *buf;
-    buf = malloc(24);
+    buf = malloc(32);
     int length = 24;
-    int ptype  = 1;
     pack32(length, buf);
-    pack16(ptype, buf+4);
+    pack16(cmd->packet_type, buf+4);
     pack16(cmd->opcode, buf+6);
     pack32(cmd->transaction, buf+8);
     pack32(cmd->param1, buf+12);
     pack32(cmd->param2, buf+16);
     pack32(cmd->param3, buf+20);
-    libusb_fill_bulk_transfer(transfer, handle, 0x02, buf, length, callback, NULL, 0);
+    pack32(cmd->param4, buf+24);
+    pack32(cmd->param5, buf+28);
+    libusb_fill_bulk_transfer(transfer, handle, 0x02, buf, length, callback, (void *)cmd, 0);
     int ret = libusb_submit_transfer(transfer);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));
@@ -166,7 +167,7 @@ int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callba
 libusb_device_handle *ptp_usb_open(libusb_device *dev) {
     libusb_device_handle *handle;
     int ret;
-    ret = libusb_open(dev, handle);
+    ret = libusb_open(dev, &handle);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't open usb device\n");
         return NULL;

@@ -1,4 +1,5 @@
 #include "Python.h"
+#include "usb.h"
 
 #define CameraObject_Check(v) (Py_TYPE(v) == &Camera_Type)
 
@@ -15,3 +16,5 @@ void Camera_dealloc(CameraObject *self);
 PyObject *Camera_open(CameraObject *self, PyObject *args);
 PyObject *Camera_getattro(CameraObject *self, PyObject *name);
 int Camera_setattr(CameraObject *self, const char *name, PyObject *v);
+void write_cb(struct libusb_transfer *transfer);
+void read_cb(struct libusb_transfer *transfer);
