@@ -167,11 +167,6 @@ int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callba
 libusb_device_handle *ptp_usb_open(libusb_device *dev) {
     libusb_device_handle *handle;
     int ret;
-    ret = libusb_reset_device(handle);
-    if (LIBUSB_SUCCESS != ret) {
-        printf("Couldn't reset device: %s\n", libusb_error_name(ret));
-        return NULL;
-    }
     ret = libusb_open(dev, &handle);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't open usb device: %s\n", libusb_error_name(ret));

@@ -13,11 +13,12 @@ def camera_added(camera):
 
 def camera_removed(camera):
     print("Camera removed: {}".format(camera))
-
+# 04a9:3272 - Canon T5i
+# 04a9:323b - Canon T4i
 def camera_test(description):
     if description['vendor'] != 0x04A9:
         return False
-    if description['product'] != 0x323B:
+    if description['product'] != 0x3272:
         return False
     return True
 

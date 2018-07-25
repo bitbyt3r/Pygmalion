@@ -61,8 +61,8 @@ void print_deviceinfo(unsigned char *buf) {
     srclen = length;
     destlen = length/2+1;
     iconvIn = buf[offset];
-    iconvOut = (char *vendor_extension_desc);
-    nconv = iconv(utfconf, &iconvIn, &srclen, &iconvOut, &destlen);
+    iconvOut = (char *)vendor_extension_desc;
+    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
     printf("Converted %d characters\n", nconv);
     printf("Vendor Extension Description Length: %d\n", length);
     vendor_extension_desc = malloc(length);
@@ -143,13 +143,12 @@ void print_deviceinfo(unsigned char *buf) {
     
     srclen = buf[offset]*2;
     length = buf[offset];
-    destlen = buf[offset]*sizeof(char);
+    destlen = buf[offset]*sizeof(char)+1;
     offset = offset + 1;
-    char *manufacturer = malloc(destlen);
+    char *manufacturer = malloc(destlen+10);
     iconvOut = (char*)manufacturer;
-    iconvIn = (char*)buf[offset];
+    iconvIn = &buf[offset];
     printf("Starting iconv %d<->%d\n", srclen, destlen);
-    char * stringp = (char *)buf[offset];
     nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
     printf("Read %d chars\n", nconv);
     printf("Iconv done\n");
@@ -202,6 +201,10 @@ void read_cb(struct libusb_transfer *transfer) {
     } else if (cmd->opcode == GetDeviceInfo) {
         printf("Got Device Info\n");
         print_deviceinfo(transfer->buffer);
+    } else if (cmd->opcode == ResetDevice) {
+        printf("Finished resetting device\n");
+        cmd->opcode = OpenSession;
+        ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
     }
 }
 
@@ -236,7 +239,7 @@ PyObject *Camera_open(CameraObject *self, PyObject *args)
     PyObject *handleObj = PyCapsule_New((void*)handle, NULL, NULL);
     Camera_setattr(self, "handle", handleObj);
     command *cmd = malloc(sizeof(command));
-    cmd->opcode = OpenSession;
+    cmd->opcode = ResetDevice;
     cmd->packet_type = 1;
     cmd->param1 = 0;
     cmd->param2 = 0;
