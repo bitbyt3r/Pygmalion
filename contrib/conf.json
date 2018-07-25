@@ -3,6 +3,10 @@
     "db_pass": "password",
     "db_host": "localhost",
     "db_database": "pygmalion",
-    "wamp_host": "localhost",
-    "wamp_port": 8080
+    "productionTip": true,
+    "wamp": {
+        "url": "ws://localhost:8080/ws",
+        "realm": "realm1",
+        "debug": true
+    }
 }

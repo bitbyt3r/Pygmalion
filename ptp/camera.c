@@ -58,6 +58,12 @@ void print_deviceinfo(unsigned char *buf) {
     char *vendor_extension_desc;
     length = buf[offset]*2;
     offset = offset + 1;
+    srclen = length;
+    destlen = length/2+1;
+    iconvIn = buf[offset];
+    iconvOut = (char *vendor_extension_desc);
+    nconv = iconv(utfconf, &iconvIn, &srclen, &iconvOut, &destlen);
+    printf("Converted %d characters\n", nconv);
     printf("Vendor Extension Description Length: %d\n", length);
     vendor_extension_desc = malloc(length);
     memcpy(vendor_extension_desc, &buf[offset], length);

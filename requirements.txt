@@ -1,1 +1,8 @@
-Cython
+autobahn
+docopt
+aiopg
+sqlalchemy
+yoyo-migrations
+aiohttp
+requests
+passlib
