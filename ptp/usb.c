@@ -146,8 +146,7 @@ int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callba
     struct libusb_transfer *transfer = libusb_alloc_transfer(0);
     unsigned char *buf;
     buf = malloc(32);
-    int length = 24;
-    pack32(length, buf);
+    pack32(cmd->length, buf);
     pack16(cmd->packet_type, buf+4);
     pack16(cmd->opcode, buf+6);
     pack32(cmd->transaction, buf+8);
@@ -156,7 +155,7 @@ int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callba
     pack32(cmd->param3, buf+20);
     pack32(cmd->param4, buf+24);
     pack32(cmd->param5, buf+28);
-    libusb_fill_bulk_transfer(transfer, handle, 0x02, buf, length, callback, (void *)cmd, 0);
+    libusb_fill_bulk_transfer(transfer, handle, 0x02, buf, cmd->length, callback, (void *)cmd, 0);
     int ret = libusb_submit_transfer(transfer);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));

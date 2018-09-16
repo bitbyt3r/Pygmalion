@@ -57,13 +57,11 @@ void print_deviceinfo(unsigned char *buf) {
     printf("Current offset: %04x (%d)\n", offset, offset);
     char *vendor_extension_desc;
     length = buf[offset]*2;
+    srclen = buf[offset];
     offset = offset + 1;
-    srclen = length;
-    destlen = length/2+1;
     iconvIn = buf[offset];
     iconvOut = (char *)vendor_extension_desc;
-    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
-    printf("Converted %d characters\n", nconv);
+    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &length);
     printf("Vendor Extension Description Length: %d\n", length);
     vendor_extension_desc = malloc(length);
     memcpy(vendor_extension_desc, &buf[offset], length);
@@ -143,41 +141,47 @@ void print_deviceinfo(unsigned char *buf) {
     
     srclen = buf[offset]*2;
     length = buf[offset];
-    destlen = buf[offset]*sizeof(char)+1;
+    destlen = length;
     offset = offset + 1;
-    char *manufacturer = malloc(destlen+10);
+    char *manufacturer = malloc(length);
     iconvOut = (char*)manufacturer;
     iconvIn = &buf[offset];
-    printf("Starting iconv %d<->%d\n", srclen, destlen);
     nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
-    printf("Read %d chars\n", nconv);
-    printf("Iconv done\n");
     offset = offset + length*2;
     printf("Manufacturer: %s\n", manufacturer);
 
-    char *model;
-    length = buf[offset]*2;
+    srclen = buf[offset]*2;
+    length = buf[offset];
+    destlen = length;
     offset = offset + 1;
-    model = malloc(length);
-    memcpy(model, &buf[offset], length);
-    offset = offset + length;
+    char *model = malloc(length);
+    iconvOut = (char*)model;
+    iconvIn = &buf[offset];
+    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
+    offset = offset + length*2;
     printf("Model: %s\n", model);
 
-    char *device_version;
-    length = buf[offset]*2;
+    srclen = buf[offset]*2;
+    length = buf[offset];
+    destlen = length;
     offset = offset + 1;
-    device_version = malloc(length);
-    memcpy(device_version, &buf[offset], length);
-    offset = offset + length;
+    char *device_version = malloc(length);
+    iconvOut = (char*)device_version;
+    iconvIn = &buf[offset];
+    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
+    offset = offset + length*2;
     printf("Device Version: %s\n", device_version);
 
-    char *serial_number;
-    length = buf[offset]*2;
+    srclen = buf[offset]*2;
+    length = buf[offset];
+    destlen = length;
     offset = offset + 1;
-    serial_number = malloc(length);
-    memcpy(serial_number, &buf[offset], length);
+    char *serial_number = malloc(length);
+    iconvOut = (char*)serial_number;
+    iconvIn = &buf[offset];
+    nconv = iconv(utfconv, &iconvIn, &srclen, &iconvOut, &destlen);
+    offset = offset + length*2;
     printf("Serial Number: %s\n", serial_number);
-    printf("Final byte read: %d\n", offset+length);
 }
 
 void read_cb(struct libusb_transfer *transfer) {
@@ -196,15 +200,25 @@ void read_cb(struct libusb_transfer *transfer) {
     
     if (cmd->opcode == OpenSession) { // OpenSession
         printf("Session Opened\n");
-        cmd->opcode = GetDeviceInfo;
+        cmd->opcode = InitiateCapture;
+        cmd->param1 = 1;
+        cmd->param2 = 0;
         ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
     } else if (cmd->opcode == GetDeviceInfo) {
         printf("Got Device Info\n");
         print_deviceinfo(transfer->buffer);
+        cmd->opcode = CloseSession;
+        ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
     } else if (cmd->opcode == ResetDevice) {
         printf("Finished resetting device\n");
         cmd->opcode = OpenSession;
+        cmd->length = 16;
+        cmd->param1 = 0xDEADBEEF;
+        cmd->transaction = 0;
         ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
+    } else if (cmd->opcode == CloseSession) {
+        printf("Closed session\n");
+        libusb_close(transfer->dev_handle);
     }
 }
 
@@ -239,9 +253,10 @@ PyObject *Camera_open(CameraObject *self, PyObject *args)
     PyObject *handleObj = PyCapsule_New((void*)handle, NULL, NULL);
     Camera_setattr(self, "handle", handleObj);
     command *cmd = malloc(sizeof(command));
-    cmd->opcode = ResetDevice;
+    cmd->opcode = OpenSession;
+    cmd->length = 24;
     cmd->packet_type = 1;
-    cmd->param1 = 0;
+    cmd->param1 = 0xDEADBEEF;
     cmd->param2 = 0;
     cmd->param3 = 0;
     cmd->transaction = 0;
