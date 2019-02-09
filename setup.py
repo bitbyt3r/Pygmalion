@@ -4,7 +4,6 @@ from setuptools.extension import Extension
 import subprocess
 import os
 import sys
-from pip.req import parse_requirements
 
 # Setuptools bug workaround issue #10945
 import codecs
