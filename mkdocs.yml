@@ -1,7 +1,7 @@
 site_name: Pygmalion
 site_url: https://photometry.io/
 repo_url: https://github.com/bitbyt3r/pygmalion
-repo_nam: Pygmalion
+repo_name: Pygmalion
 nav:
   - 'Introduction': 'index.md'
   - 'Getting Started': 'getting-started.md'
