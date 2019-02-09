@@ -34,6 +34,7 @@ const mutations = {
         vue.$delete(state.connections, connID);
     },
     update_connection(state, connection) {
+        console.log(connection);
         const conn = state.connections[connection.id];
         Object.assign(conn, connection);
     },

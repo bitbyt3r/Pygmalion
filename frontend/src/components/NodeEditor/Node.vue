@@ -58,7 +58,7 @@ export default {
         },
         outputClicked(output, event) {
             event.target.classList.add('selected');
-            this.$emit('outputClicked', output);
+            this.$emit('outputClicked', {output, event});
         },
         dragStart(event) {
             document.addEventListener('mousemove', this.dragMove);
@@ -126,6 +126,7 @@ export default {
     },
     mounted() {
         this.updateConnections();
+        window.addEventListener('resize', this.updateConnections);
     },
 };
 </script>
