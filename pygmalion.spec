@@ -10,6 +10,7 @@ BuildRequires: python3-devel
 BuildRequires: libusb-devel
 BuildRequires: gcc
 BuildRequires: npm
+Requires: python3-autobahn
 
 %{?python_enable_dependency_generator}
 
