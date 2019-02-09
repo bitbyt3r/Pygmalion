@@ -7,7 +7,6 @@ URL: https://photometry.io/
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildRequires: python3-devel
-%{?python_provide:%python_provide python3-pygmalion}
 %{?python_enable_dependency_generator}
 
 %description
