@@ -10,6 +10,9 @@ BuildRequires: python3-devel
 %{?python_provide:%python_provide python3-pygmalion}
 %{?python_enable_dependency_generator}
 
+%description
+Pygmalion allows you to produce 3D models of real objects using one or more cameras.
+
 %prep
 {{{ git_dir_setup_macro }}}
 
