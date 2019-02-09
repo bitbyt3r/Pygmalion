@@ -1,9 +1,6 @@
 #!venv/bin/python
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-import subprocess
-import os
-import sys
 
 # Setuptools bug workaround issue #10945
 import codecs
@@ -22,36 +19,9 @@ ext_modules = [
     )
 ]
 
-cmd = "git describe --tags --abbrev=0 HEAD"
-result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-git_tag = result.stdout.readlines()[0].strip().decode('ASCII')
-version_num = git_tag.lstrip('v')
-
-cmd = "git rev-list {}..HEAD --count".format(git_tag)
-result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-release_num = result.stdout.readlines()[0].strip().decode('ASCII')
-
-print("Building {}-{}".format(version_num, release_num))
-
-data_files = []
-
-if os.environ.get('RPM_MODE') == "true":
-    print("Adding migration files")
-    for x in os.walk("migrations"):
-        data_files.append((os.path.join('/usr/lib/pygmalion/', x[0]), [os.path.join(x[0], y) for y in x[2]]))
-else:
-    print("Not adding migration files")
-
-if os.environ.get('RPM_MODE') == "true":
-    print("Adding systemd service")
-    data_files.append(('/usr/lib/systemd/system/', ('contrib/pygmalion-server.service',)))
-else:
-    print("Not adding systemd service")
-
 setup(
     name='pygmalion',
     packages=find_packages(exclude=['etc', 'contrib']),
-    version=version_num,
     description='Control a bunch of cameras at once',
     long_description="""Use Photogrammetry to scan objects or people.""",
     license="MIT",
@@ -68,7 +38,6 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3 :: Only',
     ],
-    data_files=data_files,
     entry_points={
         'console_scripts': [
             'pygmalion-server=pygmalion.__main__:server',
