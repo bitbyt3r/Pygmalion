@@ -21,8 +21,8 @@ Pygmalion allows you to produce 3D models of real objects using one or more came
 
 %build
 %py3_build
-cd %{buildroot}/frontend && npm install
-cd %{buildroot}/frontend && npm run build
+cd ./frontend && npm install
+cd ./frontend && npm run build
 
 %install
 %py3_install
