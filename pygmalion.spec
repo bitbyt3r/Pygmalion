@@ -23,9 +23,11 @@ Pygmalion allows you to produce 3D models of real objects using one or more came
 
 %install
 %py3_install
+mkdir -p %{buildroot}/usr/lib/systemd/system
+cp contrib/pygmalion-server.service %{buildroot}/usr/lib/systemd/system/pygmalion-server.service
 
 %files
-/usr/lib/systemd/system/pygmalion.service
+/usr/lib/systemd/system/pygmalion-server.service
 /usr/bin/pygmalion
 /usr/bin/pygmalion-server
 %{python3_sitearch}/pygmalion/
