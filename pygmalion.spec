@@ -7,8 +7,9 @@ URL: https://photometry.io/
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildRequires: python3-devel
-BuildRequires: python3-pip
 BuildRequires: libusb-devel
+BuildRequires: gcc
+
 %{?python_enable_dependency_generator}
 
 %description
