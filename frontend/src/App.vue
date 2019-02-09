@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div>
     <md-app>
       <md-app-toolbar>
         <md-button class="md-icon-button" @click="menuVisible = !menuVisible">
