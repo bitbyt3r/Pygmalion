@@ -1,4 +1,4 @@
-Name: pygmalion
+Name: {{{ git_name pygmalion }}}
 Version: {{{ git_dir_version }}}
 Release: 1%{?dist}
 Summary: System for controlling camera rigs and generating 3D models from photos
