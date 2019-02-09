@@ -2,3 +2,11 @@ site_name: Pygmalion
 site_url: https://photometry.io/
 repo_url: https://github.com/bitbyt3r/pygmalion
 repo_name: Pygmalion
+nav:
+  - index.md
+  - getting-started.md
+  - installation.md
+  - configuration.md
+theme:
+  name: readthedocs
+  highlightjs: true
