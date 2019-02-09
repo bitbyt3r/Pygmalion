@@ -6,3 +6,4 @@ yoyo-migrations
 aiohttp
 requests
 passlib
+mkdocs>=1.0
