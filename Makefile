@@ -29,13 +29,6 @@ clean:
 	-rm -rf pygmalion.egg-info/
 	-rm -rf build/
 
-rpm: venv
-	export RPM_MODE=true; \
-	venv/bin/python setup.py bdist_rpm --release $(shell git rev-list $(shell git tag)..HEAD --count)
-
-deps_rpm: venv
-	venv/bin/python build-deps.py
-
 venv/bin/crossbar: venv
 	venv/bin/pip install crossbar
 	venv/bin/crossbar init
