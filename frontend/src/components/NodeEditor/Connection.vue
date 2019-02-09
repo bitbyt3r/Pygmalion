@@ -87,6 +87,7 @@ export default {
         this.path.setAttribute('stroke-dasharray', '20,5,5,5,5,5');
         this.updateCurve();
         this.svg.appendChild(this.path);
+        this.svg.addEventListener('resize', this.updateCurve);
     },
     methods: {
         updateCurve() {
