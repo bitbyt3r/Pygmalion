@@ -7,6 +7,8 @@ URL: https://photometry.io/
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildRequires: python3-devel
+BuildRequires: python3-pip
+BuildRequires: libusb-devel
 %{?python_enable_dependency_generator}
 
 %description
@@ -24,6 +26,7 @@ Pygmalion allows you to produce 3D models of real objects using one or more came
 %files
 /usr/lib/systemd/system/pygmalion.service
 /usr/bin/pygmalion
+/usr/bin/pygmalion-server
 %{python3_sitearch}/pygmalion/
 %{python3_sitearch}/pygmalion-*.egg-info/
 
