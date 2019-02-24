@@ -1,6 +1,7 @@
 #!venv/bin/python
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+import sys
 
 # Setuptools bug workaround issue #10945
 import codecs
@@ -11,13 +12,18 @@ except LookupError:
     func = lambda name, enc=ascii: {True: enc}.get(name == 'mbcs')
     codecs.register(func)
 
-ext_modules = [
-    Extension('pygmalion.ptp',
-        ['ptp/ptp.c', 'ptp/usb.c', 'ptp/camera.c'],
-        include_dirs=['ptp/', '/usr/include/libusb-1.0/'],
-        libraries=['usb-1.0'],
-    )
-]
+# Cannot build ptp driver on windows at the moment.
+if sys.platform.startswith("win"):
+    ext_modules = []
+
+else:
+    ext_modules = [
+        Extension('pygmalion.ptp',
+            ['ptp/ptp.c', 'ptp/usb.c', 'ptp/camera.c'],
+            include_dirs=['ptp/', '/usr/include/libusb-1.0/', 'include/'],
+            libraries=['usb-1.0'],
+        )
+    ]
 
 setup(
     name='pygmalion',

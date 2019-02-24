@@ -22,6 +22,12 @@
           <router-link to="/settings">
             <md-button><md-icon>settings</md-icon>Settings</md-button>
           </router-link>
+          <router-link v-if="logged_in" to="/logout">
+            <md-button><md-icon>settings</md-icon>Logout</md-button>
+          </router-link>
+          <router-link v-else to="/login">
+            <md-button><md-icon>settings</md-icon>Login</md-button>
+          </router-link>
         </div>
       </md-app-toolbar>
       <md-app-drawer :md-active.sync="menuVisible">
@@ -76,6 +82,27 @@ export default {
       menuVisible: false,
     };
   },
+  computed: {
+    logged_in() {
+      if (this.$store.state.user.user.username === "") {
+        return false;
+      }
+      return true;
+    }
+  },
+  mounted() {
+    let session = this.$cookies.get('session');
+    let self = this;
+    this.$wamp.call('session.renew', [], {session: session}).then(function(res) {
+      if (res.success) {
+        self.$store.commit('set_user', res.user);
+      } else {
+        self.$store.commit('clear_user');
+      }
+    }, function(err) {
+      self.$store.commit('clear_user');
+    });
+  }
 };
 </script>
 

@@ -67,8 +67,7 @@ async def check_permissions(conn, details, permissions=[]):
     sessions = await sessions.fetchall()
     for i in sessions:
         end_time = datetime.datetime.now() + datetime.timedelta(30)
-        current_time = datetime.datetime.strptime(i['time'], "%Y-%m-%d %H:%M:%S.%f")
-        if end_time > current_time:
+        if end_time > i['time']:
             for perm in permissions:
                 await test_permission(conn, details, perm, i)
             return i.user

@@ -61,8 +61,11 @@ def server():
 
     # Kill the loop on Ctrl+C
     loop = asyncio.get_event_loop()
-    loop.add_signal_handler(signal.SIGINT, functools.partial(nicely_exit, 'SIGINT'))
-    loop.add_signal_handler(signal.SIGTERM, functools.partial(nicely_exit, 'SIGTERM'))
+    try:
+        loop.add_signal_handler(signal.SIGINT, functools.partial(nicely_exit, 'SIGINT'))
+        loop.add_signal_handler(signal.SIGTERM, functools.partial(nicely_exit, 'SIGTERM'))
+    except NotImplementedError:
+        pass # Python on windows does not implement signal handlers under asyncio
 
     version_num = version = pkg_resources.require("pygmalion")[0].version
     arguments = docopt.docopt(__doc__.format(sys.argv[0]), version=str(version_num))
@@ -126,7 +129,7 @@ async def start(config=None, engine=None):
                 ]
             },
         ],
-        realm=u"realm1",
+        realm=config.get('wamp_realm', 'realm1'),
         extra=engine,
     )
 

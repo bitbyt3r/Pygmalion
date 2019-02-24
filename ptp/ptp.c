@@ -43,7 +43,7 @@ void camera_added(libusb_device *dev, struct libusb_device_descriptor *desc) {
     }
     PyObject *devObj = PyCapsule_New((void*)dev, NULL, NULL);
     PyObject *argList = Py_BuildValue("iiO", desc->idVendor, desc->idProduct, devObj);
-    PyObject *obj = newCameraObject(argList);
+    PyObject *obj = (PyObject *)newCameraObject(argList);
     Py_DECREF(argList);
     PyObject *args = Py_BuildValue("(O)", obj);
     PyEval_CallObject(camera_added_cb, args);

@@ -14,10 +14,11 @@ log = txaio.make_logger()
 
 async def validate_recaptcha(recaptcha):
     async with aiohttp.ClientSession() as session:
-        async with session.get("https://www.google.com/recaptcha/api/siteverify", params={"secret": config.get('recaptcha-secret'), "response": recaptcha}) as resp:
-            success = await resp.json()
-            log.info(success)
-            return success['success']
+        async with session.get("https://www.google.com/recaptcha/api/siteverify", params={"secret": config.get('recaptcha')['secret'], "response": recaptcha}) as resp:
+            result = await resp.json()
+            if result['success']:
+                return result['score'] >= float(config.get('recaptcha')['threshold'])
+            return False
 
 @register('session.login', options={'details_arg': 'details'})
 async def login(engine, username=None, password=None, details=None):
