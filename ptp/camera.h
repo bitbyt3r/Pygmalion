@@ -1,11 +1,13 @@
+#ifndef PTP_CAMERA
+#define PTP_CAMERA
+
 #include "Python.h"
-#include "usb.h"
 
 #define CameraObject_Check(v) (Py_TYPE(v) == &Camera_Type)
 
 PyObject *ErrorObject;
 
-typedef struct {
+typedef struct CameraObject {
     PyObject_HEAD
     PyObject *x_attr;
 } CameraObject;
@@ -18,3 +20,8 @@ PyObject *Camera_getattro(CameraObject *self, PyObject *name);
 int Camera_setattr(CameraObject *self, const char *name, PyObject *v);
 void write_cb(struct libusb_transfer *transfer);
 void read_cb(struct libusb_transfer *transfer);
+int increment_transaction(CameraObject *self);
+
+#include "usb.h"
+
+#endif

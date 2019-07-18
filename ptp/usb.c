@@ -1,6 +1,8 @@
 #include <pthread.h>
 #include "libusb.h"
 #include "usb.h"
+#include "util.h"
+#include "camera.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -20,7 +22,7 @@ static int LIBUSB_CALL hotplug_callback_attach(libusb_context *ctx, libusb_devic
         printf("Failed to get device descriptor\n");
         return 0;
     }
-    printf("Device attached: %04x:%04x\n", desc->idVendor, desc->idProduct);
+    //printf("Device attached: %04x:%04x\n", desc->idVendor, desc->idProduct);
     if (camera_test != NULL) {
         if (!(*camera_test)(desc)) {
             return 0;
@@ -122,6 +124,7 @@ int ptp_usb_start(void *camera_added_cb, void *camera_removed_cb, void *camera_t
 
 int ptp_usb_stop(void) {
     if (!done) {
+        printf("Stopping libusb...\n");
         done = true;
         libusb_hotplug_deregister_callback(ctx, hotplug_callback_attach);
         libusb_hotplug_deregister_callback(ctx, hotplug_callback_detach);
@@ -142,6 +145,20 @@ void pack32(uint32_t val, unsigned char *buf) {
     buf[3] = (val >> 24) & 0xff;
 }
 
+uint32_t unpack32(unsigned char *buf) {
+    uint32_t val = buf[3];
+    val = (val << 8) + buf[2];
+    val = (val << 8) + buf[1];
+    val = (val << 8) + buf[0];
+    return val;
+}
+
+uint16_t unpack16(unsigned char *buf) {
+    uint16_t val = buf[1];
+    val = (val << 8) + buf[0];
+    return val;
+}
+
 int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callback) {
     struct libusb_transfer *transfer = libusb_alloc_transfer(0);
     unsigned char *buf;
@@ -159,6 +176,7 @@ int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callba
     int ret = libusb_submit_transfer(transfer);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));
+        print_trace();
     }
     return ret;
 }

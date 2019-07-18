@@ -19,7 +19,7 @@ if sys.platform.startswith("win"):
 else:
     ext_modules = [
         Extension('pygmalion.ptp',
-            ['ptp/ptp.c', 'ptp/usb.c', 'ptp/camera.c'],
+            ['ptp/ptp.c', 'ptp/usb.c', 'ptp/camera.c', 'ptp/util.c'],
             include_dirs=['ptp/', '/usr/include/libusb-1.0/', 'include/'],
             libraries=['usb-1.0'],
         )

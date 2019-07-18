@@ -38,37 +38,49 @@ PyMODINIT_FUNC PyInit_ptp(void) {
 }
 
 void camera_added(libusb_device *dev, struct libusb_device_descriptor *desc) {
+    PyGILState_STATE gstate;
+
     if (camera_added_cb == NULL) {
         return;
     }
+    gstate = PyGILState_Ensure();
     PyObject *devObj = PyCapsule_New((void*)dev, NULL, NULL);
     PyObject *argList = Py_BuildValue("iiO", desc->idVendor, desc->idProduct, devObj);
     PyObject *obj = (PyObject *)newCameraObject(argList);
     Py_DECREF(argList);
     PyObject *args = Py_BuildValue("(O)", obj);
     PyEval_CallObject(camera_added_cb, args);
+    PyGILState_Release(gstate);
 }
 
 void camera_removed(libusb_device *dev, struct libusb_device_descriptor *desc) {
+    PyGILState_STATE gstate;
+
     if (camera_removed_cb == NULL) {
         return;
     }
     PyObject *args;
     args = Py_BuildValue("({s:i,s:i,s:i})", "vendor", desc->idVendor, "product", desc->idProduct, "device", dev);
+    gstate = PyGILState_Ensure();
     PyEval_CallObject(camera_removed_cb, args);
     Py_DECREF(args);
+    PyGILState_Release(gstate);
 }
 
 bool camera_test(struct libusb_device_descriptor *desc) {
+    PyGILState_STATE gstate;
+
     if (camera_test_cb == NULL) {
         return true;
     }
     PyObject *args;
-    args = Py_BuildValue("({s:i,s:i,s:i})", "vendor", desc->idVendor, "product", desc->idProduct);
+    args = Py_BuildValue("({s:i,s:i})", "vendor", desc->idVendor, "product", desc->idProduct);
+    gstate = PyGILState_Ensure();
     PyObject *result = PyEval_CallObject(camera_test_cb, args);
     Py_DECREF(args);
     bool bool_result = PyObject_IsTrue(result);
     Py_DECREF(result);
+    PyGILState_Release(gstate);
     return bool_result;
 }
 

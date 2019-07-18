@@ -2,6 +2,7 @@
 #define PTP_USB
 
 #include "libusb.h"
+#include "camera.h"
 
 enum Operation {
     GetDeviceInfo        = 0x1001,
@@ -44,11 +45,13 @@ typedef struct command {
     uint32_t param3;
     uint32_t param4;
     uint32_t param5;
+    CameraObject *camera;
 } command;
 
 int ptp_usb_start(void *camera_added_cb, void *camera_removed_cb, void *camera_test_cb);
 int ptp_usb_stop(void);
 libusb_device_handle *ptp_usb_open(libusb_device *dev);
 int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callback);
-
+uint32_t unpack32(unsigned char*);
+uint16_t unpack16(unsigned char*);
 #endif
