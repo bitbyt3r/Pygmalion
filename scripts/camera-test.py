@@ -26,7 +26,7 @@ def camera_test(description):
     return False
 
 pygmalion.ptp.init(camera_added=camera_added, camera_removed=camera_removed, camera_test=camera_test)
-time.sleep(60)
+time.sleep(25)
 print("Closing cameras...")
 for camera in cameras:
     camera.close()

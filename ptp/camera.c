@@ -1,6 +1,7 @@
 #include "Python.h"
 #include <iconv.h>
 #include "usb.h"
+#include "libusb.h"
 
 CameraObject *newCameraObject(PyObject *arg)
 {
@@ -187,77 +188,167 @@ void print_deviceinfo(unsigned char *buf) {
     printf("Serial Number: %s\n", serial_number);
 }
 
-void read_cb(struct libusb_transfer *transfer) {
-    command *cmd = malloc(sizeof(command));
-    memset(cmd, 0, sizeof(command));
-    cmd->length = 24;
-    cmd->packet_type = 1;
-    cmd->opcode = ((command *)transfer->user_data)->opcode;
-    cmd->camera = ((command *)transfer->user_data)->camera;
-    cmd->transaction = increment_transaction(cmd->camera);
-    free(transfer->user_data);
-
-    if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
-        printf("Transfer Failed %d\n", cmd->opcode);
-        return;
+send_bulk(container *con, struct libusb_transfer *transfer) {
+    unsigned char *buf;
+    buf = malloc(8192);
+    con->transaction = increment_transaction(con->camera);
+    pack32(con->length, buf);
+    pack16(con->container_type, buf+4);
+    pack16(con->code, buf+6);
+    //pack32(con->session, buf+8);
+    pack32(con->transaction, buf+8);
+    pack32(con->param1, buf+12);
+    pack32(con->param2, buf+16);
+    pack32(con->param3, buf+20);
+    pack32(con->param4, buf+24);
+    pack32(con->param5, buf+28);
+    //printf("Sending->Length: %08X, Container: %04X, Code: %04X, Session: %08X, Transaction: %08X\n", con->length, con->container_type, con->code, con->session, con->transaction);
+    for (int i=0; i<con->length; i++) {
+        //printf("%02X ", buf[i]);
     }
-    
-    printf("Received %d bytes:\n", transfer->length);
-    uint32_t length = unpack32(transfer->buffer);
-    printf("Reported size %d bytes\n", length);
-    uint16_t container_type = unpack16(transfer->buffer+4);
-    printf("Container_type: %d\n", container_type);
-    uint16_t response_code = unpack16(transfer->buffer+6);
-    uint32_t session_id = unpack32(transfer->buffer+8);
-    uint32_t transaction_id = unpack32(transfer->buffer+12);
-    printf("Container: %04X, Response: %04X, Session: %08X, Transaction: %08X\n", container_type, response_code, session_id, transaction_id);
-    for (int i=0; i<length; i++) {
-        printf("%02X ", transfer->buffer[i]);
-    }
-    printf("\n");
-
-    if (cmd->opcode == OpenSession) { // OpenSession
-        printf("Session Opened\n");
-        cmd->opcode = GetDeviceInfo;
-        cmd->param1 = 1;
-        cmd->param2 = 0;
-        ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
-    } else if (cmd->opcode == GetDeviceInfo) {
-        printf("Got Device Info\n");
-        //print_deviceinfo(transfer->buffer);
-        cmd->opcode = CloseSession;
-        ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
-    } else if (cmd->opcode == ResetDevice) {
-        printf("Finished resetting device\n");
-        cmd->opcode = OpenSession;
-        cmd->length = 16;
-        cmd->param1 = 0xDEADBEEF;
-        cmd->transaction = 0;
-        ptp_usb_transaction(cmd, transfer->dev_handle, write_cb);
-    } else if (cmd->opcode == CloseSession) {
-        printf("Closed session\n");
+    //printf("\n");
+    libusb_fill_bulk_transfer(transfer, transfer->dev_handle, 0x02, buf, con->length, write_cb, (void *)con, 0);
+    int ret = libusb_submit_transfer(transfer);
+    if (LIBUSB_SUCCESS != ret) {
+        printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));
+        print_trace();
     }
 }
 
-void write_cb(struct libusb_transfer *transfer) {
-    if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
-        printf("Transfer successful\n");
-    } else {
-        printf("Transfer failed: %d\n", transfer->status);
-    }
+recv_bulk(struct libusb_transfer *transfer) {
     unsigned char *buf;
-    buf = malloc(1024);
-    int length=1024;
-    printf("Write finished for opcode %p\n", (void*)((command*)transfer->user_data)->opcode);
+    buf = malloc(8192);
+    int length=8192;
     libusb_fill_bulk_transfer(transfer, transfer->dev_handle, 0x81, buf, length, read_cb, transfer->user_data, 0);
     int ret;
-    printf("Submitting transfer\n");
     ret = libusb_submit_transfer(transfer);
     if (LIBUSB_SUCCESS != ret) {
         printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));
         return;
     }
-    printf("Read submitted\n");
+}
+
+void read_cb(struct libusb_transfer *transfer) {    
+    container *con = (container*)transfer->user_data;
+    if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
+        switch (con->code) {
+            default:
+                printf("Transfer Failed %d\n", con->code);
+                return;
+                break;
+        }
+    }
+
+    uint32_t length = unpack32(transfer->buffer);
+    uint16_t container_type = unpack16(transfer->buffer+4);
+    uint16_t code = unpack16(transfer->buffer+6);
+    uint32_t session_id = unpack32(transfer->buffer+8);
+    uint32_t transaction_id = unpack32(transfer->buffer+12);
+    //printf("Recv length: %d, length: %d, actual_length: %d\n", length, transfer->length, transfer->actual_length);
+    if (length > transfer->actual_length) {
+        length = transfer->actual_length;
+        printf("Received partial transaction\n");
+    }
+    //printf("Received->Length: %08X, Container: %04X, Code: %04X, Session: %08X, Transaction: %08X\n", length, container_type, code, session_id, transaction_id);
+    for (int i=0; i<length; i++) {
+        //printf("%02X ", transfer->buffer[i]);
+    }
+    //printf("\n");
+
+    switch (container_type) {
+        case CommandBlock:
+            printf("Received command block from the camera. This shouldn't happen.\n");
+            break;
+        case DataBlock:
+            if (code != con->code) {
+                printf("Data block received for different opcode than requested it. Got %04X, expected %04X\n", code, con->code);
+            }
+            int idx = 12;
+            switch (con->code) {
+                case GetDeviceInfo:
+                    print_deviceinfo(transfer->buffer);
+                    recv_bulk(transfer);
+                    break;
+                case CanonGetEvent:
+                    printf("Processing events...\n");
+                    while (idx < length) {
+                        printf("Get byte\n");
+                        int event_length = unpack32(transfer->buffer+idx);
+                        printf("Event length: %d\n", event_length);
+                        if (idx + event_length > length) {
+                            printf("Invalid event at end of buffer: Too long.\n");
+                            break;
+                        }
+                        printf("Found event: ");
+                        for (int i=4; i<event_length; i++) {
+                            printf("%02X ", transfer->buffer[idx+i]);
+                        }
+                        idx = idx + event_length;
+                    }
+                    recv_bulk(transfer);
+                    break;
+            }
+            break;
+        case ResponseBlock:
+            switch (con->code) {
+                case OpenSession:
+                    if (code == OK) {
+                        con->length = 16;
+                        con->session = con->param1;
+                        con->code = GetDeviceInfo;
+                        send_bulk(con, transfer);
+                    } else {
+                        printf("Failed to open session: %04X\n", code);
+                    }
+                    break;
+                case GetDeviceInfo:
+                    con->length = 16;
+                    con->param1 = 1;
+                    con->code = CanonSetRemoteMode;
+                    send_bulk(con, transfer);
+                    break;
+                case CanonSetRemoteMode:
+                    con->length = 16;
+                    con->param1 = 1;
+                    con->code = CanonSetEventMode;
+                    send_bulk(con, transfer);
+                    break;
+                case CanonSetEventMode:
+                    con->length = 16;
+                    con->param1 = 0x00001FFF;
+                    con->code = CanonSetRequestOLCInfoGroup;
+                    send_bulk(con, transfer);
+                    break;
+                case CanonSetRequestOLCInfoGroup:
+                    printf("Configured to receive events.\n");
+                case CanonGetEvent:
+                    if (code == OK) {
+                        con->length = 16;
+                        con->code = CanonGetEvent;
+                        send_bulk(con, transfer);
+                    }
+                    break;
+                default:
+                    if (code != OK) {
+                        printf("Command %04X failed: %04X\n", con->code, code);
+                    }
+            }
+            break;
+        case EventBlock:
+            printf("Received event\n");
+            break;
+        default:
+            printf("Unknown container type %d\n", container_type);
+    }
+}
+
+void write_cb(struct libusb_transfer *transfer) {
+    if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
+        //printf("Transfer successful\n");
+    } else {
+        printf("Transfer failed: %d\n", transfer->status);
+    }
+    recv_bulk(transfer);
 }
 
 int increment_transaction(CameraObject *self) {
@@ -267,13 +358,14 @@ int increment_transaction(CameraObject *self) {
     id++;
     PyDict_SetItemString(self->x_attr, "transaction", PyLong_FromLong(id));
     PyGILState_Release(gstate);
-    return id;
+    return id - 1;
 }
 
 PyObject *Camera_open(CameraObject *self, PyObject *args) {
     PyGILState_STATE gstate;
-    libusb_device *dev;
     gstate = PyGILState_Ensure();
+
+    libusb_device *dev;
     PyObject *device = PyDict_GetItemString(self->x_attr, "device");
     dev = (libusb_device*)PyCapsule_GetPointer(device, NULL);
     libusb_device_handle *handle = ptp_usb_open(dev);
@@ -281,36 +373,43 @@ PyObject *Camera_open(CameraObject *self, PyObject *args) {
     PyDict_SetItemString(self->x_attr, "session", PyLong_FromLong(0xDEADBEEF));
     PyDict_SetItemString(self->x_attr, "transaction", PyLong_FromLong(0));
     PyGILState_Release(gstate);
+
     Camera_setattr(self, "handle", handleObj);
-    command *cmd = malloc(sizeof(command));
-    cmd->opcode = OpenSession;
-    cmd->length = 24;
-    cmd->packet_type = 1;
-    cmd->param1 = 0xDEADBEEF;
-    cmd->param2 = 0;
-    cmd->param3 = 0;
-    cmd->transaction = 0;
-    cmd->camera = self;
-    ptp_usb_transaction(cmd, handle, write_cb);
+    container *con = malloc(sizeof(container));
+    con->length = 16;
+    con->container_type = CommandBlock;
+    con->code = OpenSession;
+    con->session = 0;
+    con->transaction = 0;
+    con->param1 = 0xDEADBEEF;
+    con->param2 = 0;
+    con->param3 = 0;
+    con->camera = self;
+    struct libusb_transfer *transfer = libusb_alloc_transfer(0);
+    transfer->dev_handle = handle;
+    send_bulk(con, transfer);
     Py_RETURN_NONE;
 }
 
 PyObject *Camera_close(CameraObject *self, PyObject *args) {
-    libusb_device *dev;
-    PyObject *device = PyDict_GetItemString(self->x_attr, "device");
-    dev = (libusb_device*)PyCapsule_GetPointer(device, NULL);
-    libusb_device_handle *handle = ptp_usb_open(dev);
-    PyObject *handleObj = PyCapsule_New((void*)handle, NULL, NULL);
-    Camera_setattr(self, "handle", handleObj);
-    command *cmd = malloc(sizeof(command));
-    cmd->opcode = CloseSession;
-    cmd->length = 24;
-    cmd->packet_type = 1;
-    cmd->param1 = 0;
-    cmd->param2 = 0;
-    cmd->param3 = 0;
-    cmd->transaction = 0;
-    ptp_usb_transaction(cmd, handle, write_cb);
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+    int sessionid = PyLong_AsLong(PyDict_GetItemString(self->x_attr, "session"));
+    PyObject *pyhandle = PyDict_GetItemString(self->x_attr, "handle");
+    libusb_device_handle *handle = (libusb_device_handle*)PyCapsule_GetPointer(pyhandle, NULL);
+    PyGILState_Release(gstate);
+    container *con = malloc(sizeof(container));
+    con->camera = self;
+    con->length = 28;
+    con->container_type = CommandBlock;
+    con->code = CloseSession;
+    con->session = sessionid;
+    con->param1 = 0;
+    con->param2 = 0;
+    con->param3 = 0;
+    struct libusb_transfer *transfer = libusb_alloc_transfer(0);
+    transfer->dev_handle = handle;
+    send_bulk(con, transfer);
     Py_RETURN_NONE;
 }
 
@@ -320,6 +419,7 @@ PyObject *Camera_register_event_cb(CameraObject *self, PyObject *args) {
 
 PyMethodDef Camera_methods[] = {
     {"open", (PyCFunction)Camera_open, METH_VARARGS, ""},
+    {"close", (PyCFunction)Camera_close, METH_VARARGS, ""},
     {"register_event_cb", (PyCFunction)Camera_register_event_cb, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}
 };
@@ -346,8 +446,7 @@ int Camera_setattr(CameraObject *self, const char *name, PyObject *v)
     if (v == NULL) {
         int rv = PyDict_DelItemString(self->x_attr, name);
         if (rv < 0)
-            PyErr_SetString(PyExc_AttributeError,
-                "delete non-existing Camera attribute");
+            PyErr_SetString(PyExc_AttributeError, "delete non-existing Camera attribute");
         return rv;
     }
     else {

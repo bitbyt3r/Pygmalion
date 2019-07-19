@@ -133,54 +133,6 @@ int ptp_usb_stop(void) {
     }
 }
 
-void pack16(uint16_t val, unsigned char *buf) {
-    buf[0] = val & 0xff;
-    buf[1] = (val >> 8) & 0xff;
-}
-
-void pack32(uint32_t val, unsigned char *buf) {
-    buf[0] = val & 0xff;
-    buf[1] = (val >> 8) & 0xff;
-    buf[2] = (val >> 16) & 0xff;
-    buf[3] = (val >> 24) & 0xff;
-}
-
-uint32_t unpack32(unsigned char *buf) {
-    uint32_t val = buf[3];
-    val = (val << 8) + buf[2];
-    val = (val << 8) + buf[1];
-    val = (val << 8) + buf[0];
-    return val;
-}
-
-uint16_t unpack16(unsigned char *buf) {
-    uint16_t val = buf[1];
-    val = (val << 8) + buf[0];
-    return val;
-}
-
-int ptp_usb_transaction(command *cmd, libusb_device_handle *handle, void *callback) {
-    struct libusb_transfer *transfer = libusb_alloc_transfer(0);
-    unsigned char *buf;
-    buf = malloc(32);
-    pack32(cmd->length, buf);
-    pack16(cmd->packet_type, buf+4);
-    pack16(cmd->opcode, buf+6);
-    pack32(cmd->transaction, buf+8);
-    pack32(cmd->param1, buf+12);
-    pack32(cmd->param2, buf+16);
-    pack32(cmd->param3, buf+20);
-    pack32(cmd->param4, buf+24);
-    pack32(cmd->param5, buf+28);
-    libusb_fill_bulk_transfer(transfer, handle, 0x02, buf, cmd->length, callback, (void *)cmd, 0);
-    int ret = libusb_submit_transfer(transfer);
-    if (LIBUSB_SUCCESS != ret) {
-        printf("Couldn't submit transfer: %s\n", libusb_error_name(ret));
-        print_trace();
-    }
-    return ret;
-}
-
 libusb_device_handle *ptp_usb_open(libusb_device *dev) {
     libusb_device_handle *handle;
     int ret;
